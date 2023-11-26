@@ -6,7 +6,7 @@ from tkinter import messagebox
 from PIL import Image, ImageTk
 import pyautogui
 
-
+# Get the screen resolution to fix with its screen size #
 def get_display_resolution():
     width, height = pyautogui.size()
     return width, height
