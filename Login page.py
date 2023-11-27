@@ -5,8 +5,11 @@ from tkinter import filedialog
 from tkinter import messagebox
 from PIL import Image, ImageTk
 import pyautogui
+from io import BytesIO
+import pandas as pd
+import os
 
-# Get the screen resolution to fix with its screen size #
+
 def get_display_resolution():
     width, height = pyautogui.size()
     return width, height
@@ -41,6 +44,16 @@ def check_company_name_not_null():
     result = check.fetchall()
     connection.close()
     return len(result) > 0
+
+
+def export_summary():
+    conn = sqlite3.connect('DATABASES/recording.db')
+    df = pd.read_sql_query("SELECT * from recordsummary", conn)
+    df.to_excel(f"RECORDING SUMMARY.xlsx", index=False)
+    conn.close()
+    print("Data exported to Excel successfully.")
+    messagebox.showinfo("Exported", "Overall data exported to Excel successfully.")
+
 
 # With user credentials user can logged into the software ↓ #
 
@@ -80,7 +93,7 @@ def login_account():
         # In this function by if condition users can be classified whether admin or employee #
         # If condition for admin #
         if is_admin(u_name, password):
-            print('Hello admin')
+            print('Admin Panel')
 
             def create_user():
                 admin_panel.destroy()
@@ -121,23 +134,117 @@ def login_account():
                 c_user.mainloop()
 
             admin_panel = Tk()
-            admin_panel.geometry('500x200')
+            admin_panel.geometry(f"{display_resolution[0]}x{display_resolution[1]}")
             admin_panel.title('ADMIN PANEL')
-            cre_user = Button(admin_panel, text='Create user', command=create_user)
-            cre_user.pack()
+
+            options_frame = tk.Frame(admin_panel, bg="#c3c3c3", highlightbackground='black', highlightthickness=2)
+            options_frame.pack(side=tk.LEFT)
+            options_frame.pack_propagate(False)
+            options_frame.configure(width=210, height=1500)
+
+            # BUTTONS
+            general = tk.Label(options_frame, text="GENERAL", font=10, bg="#c3c3c3")
+            general.place(x=50, y=20)
+
+            rec_btn = tk.Button(options_frame, text="RECORD", font=('Bold', 15), fg='white', bd=0, bg='#4392fa',width=15,borderwidth=5)
+            rec_btn.place(x=10, y=50)
+
+            summary_btn = tk.Button(options_frame, text="DISPLAY \n SUMMARY", font=('Bold', 15), fg='white', bd=0,bg='#4392fa',width=15, borderwidth=5)
+            summary_btn.place(x=10, y=110)
+
+            exp_rec_summary_bt = tk.Button(options_frame, text="EXPORT REC\n SUMMARY", font=('Bold', 15),fg='white', bd=0,bg='#4392fa',width=15, borderwidth=5, command=export_summary)
+            exp_rec_summary_bt.place(x=10, y=195)
+
+            options = tk.Label(options_frame, text="OPTIONS", font=15, bg="#c3c3c3")
+            options.place(x=50, y=280)
+
+            input_btn = tk.Button(options_frame, text="INPUT \n VIDEO", font=('Bold', 15), fg='white', bd=0,bg='#4392fa', width=15,borderwidth=5)
+            input_btn.place(x=10, y=320)
+
+            data_btn = tk.Button(options_frame, text="EXPORT\nCAPTURED\nDATA", font=('Bold', 15), fg='white', bd=0,bg='#4392fa',width=15, borderwidth=5)
+            data_btn.place(x=10, y=400)
+
+            exp_input_summary_bt = tk.Button(options_frame, text="EXPORT INPUT\n SUMMARY", font=('Bold', 15),fg='white', bd=0,bg='#4392fa',width=15, borderwidth=5)
+            exp_input_summary_bt.place(x=10, y=505)
+
+            download_btn = tk.Button(options_frame, text="DOWNLOAD \n CLIP", font=('Bold', 15), fg='white', bd=0,bg='#4392fa',width=15, borderwidth=5)
+            download_btn.place(x=10, y=590)
+
+            cre_user = Button(options_frame, text='CREATE USER', font=('Bold', 15), fg='white', bd=0,bg='#4392fa',width=15, borderwidth=5, command=create_user)
+            cre_user.place(x=10, y=680)
+
+            delete_db = tk.Button(options_frame, text="Delete DB", bg='red', fg='white')
+            delete_db.place(x=60, y=750)
+
+            # MAIN FRAME
+
+            main_frame = tk.Frame(admin_panel, highlightbackground='black', highlightthickness=2)
+            main_frame.pack(side=tk.LEFT)
+            main_frame.pack_propagate(False)
+            main_frame.configure(height=1500, width=7100, bg='#2c2f33')
+
             admin_panel.mainloop()
 
         # Elif condition for employee #
         elif is_user(u_name, password):
-            print('Hello User')
+            print('User Panel')
 
             user_panel = Tk()
-            user_panel.geometry('500x200')
+            user_panel.geometry(f"{display_resolution[0]}x{display_resolution[1]}")
             user_panel.title('USER PANEL')
+            connect = sqlite3.connect('EAN.db')
+            to_connect_name = connect.cursor()
+            to_connect_name.execute("SELECT Images FROM details")
+            image_data = to_connect_name.fetchone()[0]
+
+            image_stream = BytesIO(image_data)
+            original_img = Image.open(image_stream)
+            desired_width = 80
+            desired_height = 80
+            resized_img = original_img.resize((desired_width, desired_height), Image.LANCZOS)
+            img = ImageTk.PhotoImage(resized_img)
+
+            # OPTION FRAME
+            options_frame = tk.Frame(user_panel, bg="#c3c3c3", highlightbackground='black', highlightthickness=2)
+            options_frame.pack(side=tk.LEFT)
+            options_frame.pack_propagate(False)
+            options_frame.configure(width=210, height=1500)
+
+            # BUTTONS
+            general = tk.Label(options_frame, text="GENERAL", font=10, bg="#c3c3c3")
+            general.place(x=50, y=150)
+
+            rec_btn = tk.Button(options_frame, text="RECORD", font=('Bold', 15), fg='white', bd=0, bg='#4392fa', width=15, borderwidth=5)
+            rec_btn.place(x=10, y=200)
+
+            summary_btn = tk.Button(options_frame, text="DISPLAY \n SUMMARY", font=('Bold', 15), fg='white', bd=0, bg='#4392fa', width=15, borderwidth=5)
+            summary_btn.place(x=10, y=270)
+
+            exp_rec_summary_bt = tk.Button(options_frame, text="EXPORT REC\n SUMMARY", font=('Bold', 15), fg='white', bd=0, bg='#4392fa', width=15, borderwidth=5, command=export_summary)
+            exp_rec_summary_bt.place(x=10, y=370)
+
+            label = Label(options_frame, image=img)
+            label.place(x=58, y=800)
+
+            company_name_display = Label(options_frame, text=f'{comp_name}', font=('Kozuka Gothic Pro B', 10, 'italic'), bg="#c3c3c3")
+            company_name_display.place(x=70, y=900)
+
+            company_location = Label(options_frame, text=f'{location_company}', font=('Kozuka Gothic Pro B', 10, 'italic'), bg="#c3c3c3")
+            company_location.place(x=70, y=920)
+
+            # MAIN FRAME
+            main_frame = tk.Frame(user_panel, highlightbackground='black', highlightthickness=2)
+            main_frame.pack(side=tk.LEFT)
+            main_frame.pack_propagate(False)
+            main_frame.configure(height=1500, width=7100, bg='#2c2f33')
+
+            user_panel.mainloop()
 
         else:
             print('Invalid credentials or you do not have access to the admin portal.')
             messagebox.showerror('Invalid Credentials', f'Username or password is wrong')
+
+# Classified based on the screen resolution #
 
     if check_user_name_not_null():
         if display_resolution[0] == 1920 and display_resolution[1] == 1080:
@@ -211,6 +318,8 @@ def login():
     to_connect_name.execute("SELECT company_name FROM details")
     to_connect_location.execute("SELECT location FROM details")
 
+    global comp_name, location_company
+
     company_names = to_connect_name.fetchall()
     company_names_str = "\n".join([name[0] for name in company_names])
     comp_name = company_names_str.upper()
@@ -238,9 +347,7 @@ def login():
     to_connect_name.execute("SELECT Images FROM details")
     image_data = to_connect_name.fetchone()[0]
 
-    from io import BytesIO
     image_stream = BytesIO(image_data)
-
     original_img = Image.open(image_stream)
     desired_width = 300
     desired_height = 300
