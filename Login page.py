@@ -9,12 +9,26 @@ from io import BytesIO
 import pandas as pd
 import os
 import cv2
+from datetime import datetime
+import winsound
+import numpy as np
+from pyzbar.pyzbar import decode
+
+camera_list = [f'Camera {i}' for i in range(10) if cv2.VideoCapture(i).read()[0]]
+print(f'Detected cameras: {", ".join(camera_list)}')
+Number_of_camera = len(camera_list)
+print("Total number of cameras:", Number_of_camera)
 
 try:
     if not os.path.exists('DATABASES'):
         os.makedirs('DATABASES')
 except OSError:
     print('Error: Creating directory of DATABASES')
+
+current_date = datetime.now().strftime("%d-%m-%Y")
+
+for recording in range(Number_of_camera):
+    print(recording)
 
 
 def get_display_resolution():
@@ -53,15 +67,185 @@ def check_company_name_not_null():
     return len(result) > 0
 
 
+def start_recording1():
+    global recording, start_time1, writer1, current_date, starting_time1, started_time1, elapsed_time_str1, first_detection_times1, camera1, data1, qr_codes_array1, video_name1
+    recording = True
+    start_time1 = None
+    data1 = ' '
+    qr_codes_array1 = []
+    first_detection_times1 = {}
+    live_time1 = datetime.now()
+    started_time1 = live_time1.strftime("%I:%M %p")
+    camera1 = "CAM1"
+    time_1 = time1.get()
+    video_name1 = f'{camera1}-{time_1}'
+    num1.config(text=0)
+    strt1.config(text=0)
+    drn1.config(text=0)
+    print("Camera1 Recording")
+    writer1 = cv2.VideoWriter(f"./{current_date}/{video_name1}.mp4", fourcc1, 23.0,
+                              (640, 480))
+
+
+def stop_recording1():
+    global recording, writer1, start_time1, elapsed_time_str1, code_array1
+    print("Camera1 Stopped")
+    if writer1 is not None:
+        writer1.release()
+
+    elapsed_time1 = datetime.now() - start_time1
+    elapsed_time_str1 = str(elapsed_time1).split(".")[0]
+    dur1 = elapsed_time_str1
+    code_array1 = len(qr_codes_array1)
+    print("no in 1 camera", code_array1)
+
+    if len(first_detection_times1) == 0:
+        print("no DATA DETECTED")
+
+    else:
+        strt1.config(text=started_time1)
+        drn1.config(text=dur1)
+        num1.config(text=code_array1)
+        # dispatch1(video_name1, elapsed_time_str1, len(qr_codes_array1), present_date,  present_time, username)
+        rec1_data = sqlite3.connect('./DATABASES/recording.db')
+        df = pd.read_sql_query(
+            f"SELECT * from record1data WHERE VIDEO_NAME = '{video_name1}'", rec1_data)
+        df.to_excel(f"./{current_date}/{video_name1}.xlsx", index=False)
+        rec1_data.close()
+
+
+def process_frame():
+    global recording, start_time1, writer1, end_time1, present_date, present_time, elapsed_time_str1, data1
+    # CAM CCTV
+    ret1, frame1 = cap1.read()
+    cv2.putText(frame1, "CAM1", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 1)
+    if ret1:
+        if recording:
+            qr_codes1 = decode(frame1)
+            for qr_code1 in qr_codes1:
+                data1 = qr_code1.data.decode('utf-8')
+                if data1 not in first_detection_times1:
+                    first_detection_times1[data1] = cap1.get(cv2.CAP_PROP_POS_MSEC) / 1000
+                    qr_codes_array1.append(data1)
+
+                    frequency = 1000
+                    duration = 500
+                    winsound.Beep(frequency, duration)
+                    present_date = datetime.now().strftime('%Y-%m-%d')
+                    present_time = datetime.now().strftime('%I:%M %p')
+
+                    print(
+                        f"QR code {data1} detected for the first time at{elapsed_time_str1} on {present_date}-{present_time} in {video_name1}")
+                    # scan1(data1, elapsed_time_str1, present_date, present_time, video_name1,  username)
+
+                for qr_code1 in qr_codes1:
+                    (x, y, w, h) = qr_code1.rect
+                    cv2.rectangle(frame1, (x, y), (x + w, y + h), (0, 255, 0), 2)
+                    pts2 = qr_code1.rect
+                    cv2.putText(frame1, data1, (pts2[0], pts2[1]), cv2.FONT_HERSHEY_SIMPLEX,
+                                0.9, (255, 0, 255), 1)
+
+                if len(qr_codes_array1) == 0:
+                    print("No QR codes detected!!!!!")
+
+            if start_time1 is None:
+                start_time1 = datetime.now()
+
+            elapsed_time1 = datetime.now() - start_time1
+            elapsed_time_str1 = str(elapsed_time1).split(".")[0]
+            cv2.putText(frame1, "CAM1", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.5,
+                        (0, 0, 255), 1)
+            cv2.putText(frame1, f"START TIME:  {started_time1}", (10, 60),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.5,
+                        (0, 0, 255), 1)
+            cv2.putText(frame1, f"DURATION:    {elapsed_time_str1}", (10, 90),
+                        cv2.FONT_HERSHEY_SIMPLEX,
+                        0.5,
+                        (0, 0, 255), 1)
+            cv2.putText(frame1, f"NO OF DATA:  {len(qr_codes_array1)}", (10, 120),
+                        cv2.FONT_HERSHEY_SIMPLEX,
+                        0.5, (0, 0, 255), 1)
+            cv2.putText(frame1, f"LAST DATA:   {data1}", (10, 150),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.5,
+                        (0, 0, 255),
+                        1)
+            writer1.write(frame1)
+        cv2.imshow("Recording Camera 1", frame1)
+
+    if not ret1:
+        blank_frame1 = np.zeros((480, 640, 3), dtype=np.uint8)
+        cv2.putText(blank_frame1, "CAM1 DISCONNECTED", (10, 30), cv2.FONT_HERSHEY_SIMPLEX,
+                    0.5, (0, 0, 255),
+                    1)
+        cv2.imshow("Recording Camera CAM1", blank_frame1)
+
+    controller.after(1, process_frame)
+
+
+def close_window():
+    cap1.release()
+    cv2.destroyAllWindows()
+    controller.destroy()
+
+
+def camera():
+    global cap1, fourcc1
+    cap1 = cv2.VideoCapture(0, cv2.CAP_DSHOW)
+    cap1.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+    cap1.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+    fourcc1 = cv2.VideoWriter_fourcc('m', 'p', '4', 'v')
+
+
 def record():
     # Detect the number of camera connected to system #
-    camera_list = [f'Camera {i}' for i in range(10) if cv2.VideoCapture(i).read()[0]]
-    print(f'Detected cameras: {", ".join(camera_list)}')
-    Number_of_camera = len(camera_list)
-    print("Total number of cameras:", Number_of_camera)
-
     if Number_of_camera == 1:
         print("One camera is connected to system")
+
+        global controller, time1, strt1, drn1, num1
+
+        camera()
+
+        controller = tk.Tk()
+        controller.geometry("300x300")
+        controller.title("VIDEO CONTROLLER")
+        controller.resizable(0, 0)
+
+        ################### CAM1
+        cam1 = tk.Label(controller, text="CAMERA 1", fg='blue')
+        cam1.place(x=20, y=60)
+        get_time1 = tk.Label(controller, text='Enter Time')
+        get_time1.place(x=60, y=90)
+        time1 = tk.Entry(controller)
+        time1.place(x=160, y=90)
+        start_button_1 = tk.Button(controller, text="START CAM1", command=start_recording1)
+        start_button_1.place(x=60, y=120)
+        stop_button_1 = tk.Button(controller, text="STOP CAM1", command=stop_recording1)
+        stop_button_1.place(x=160, y=120)
+
+        ####################    CAM1
+        Start_timing1 = tk.Label(controller, text="START TIME")
+        Start_timing1.place(x=60, y=150)
+        strt1 = tk.Label(controller, text="0:0")
+        strt1.place(x=210, y=150)
+        Duration_time1 = tk.Label(controller, text="DURATION")
+        Duration_time1.place(x=60, y=180)
+        drn1 = tk.Label(controller, text="0:0:0")
+        drn1.place(x=210, y=180)
+        NOD1 = tk.Label(controller, text="NO OF CAPTURED DATA")
+        NOD1.place(x=60, y=210)
+        num1 = tk.Label(controller, text="0")
+        num1.place(x=210, y=210)
+
+        close_button = tk.Button(controller, text="Close", command=close_window)
+        close_button.place(x=130, y=250)
+
+        controller.after(1, process_frame)
+        controller.mainloop()
+
+
+
+    elif Number_of_camera == 2:
+        print("Two camera is connected to system")
 
 
 def display_summary():
@@ -693,3 +877,5 @@ else:
     submit.place(x=250, y=310)
 
     w.mainloop()
+
+
