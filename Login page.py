@@ -89,6 +89,7 @@ def start_recording1():
 
 def stop_recording1():
     global recording, writer1, start_time1, elapsed_time_str1, code_array1
+    recording = False
     print("Camera1 Stopped")
     if writer1 is not None:
         writer1.release()
