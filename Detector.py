@@ -14,6 +14,7 @@ import winsound
 import numpy as np
 from pyzbar.pyzbar import decode
 
+#Detect the number of cameras connected to system.
 camera_list = [f'Camera {i}' for i in range(10) if cv2.VideoCapture(i).read()[0]]
 print(f'Detected cameras: {", ".join(camera_list)}')
 Number_of_camera = len(camera_list)
