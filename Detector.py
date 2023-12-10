@@ -9,27 +9,12 @@ from io import BytesIO
 import pandas as pd
 import os
 import cv2
-from datetime import datetime
-import winsound
-import numpy as np
-from pyzbar.pyzbar import decode
-
-#Detect the number of cameras connected to system.
-camera_list = [f'Camera {i}' for i in range(10) if cv2.VideoCapture(i).read()[0]]
-print(f'Detected cameras: {", ".join(camera_list)}')
-Number_of_camera = len(camera_list)
-print("Total number of cameras:", Number_of_camera)
 
 try:
     if not os.path.exists('DATABASES'):
         os.makedirs('DATABASES')
 except OSError:
     print('Error: Creating directory of DATABASES')
-
-current_date = datetime.now().strftime("%d-%m-%Y")
-
-for recording in range(Number_of_camera):
-    print(recording)
 
 
 def get_display_resolution():
@@ -39,7 +24,6 @@ def get_display_resolution():
 
 display_resolution = get_display_resolution()
 print(f"Display Resolution: {display_resolution[0]}x{display_resolution[1]}")
-
 
 conn = sqlite3.connect('EAN.db')
 cursor = conn.cursor()
@@ -68,145 +52,29 @@ def check_company_name_not_null():
     return len(result) > 0
 
 
-def start_recording1():
-    global recording, start_time1, writer1, current_date, starting_time1, started_time1, elapsed_time_str1, first_detection_times1, camera1, data1, qr_codes_array1, video_name1
-    recording = True
-    start_time1 = None
-    data1 = ' '
-    qr_codes_array1 = []
-    first_detection_times1 = {}
-    live_time1 = datetime.now()
-    started_time1 = live_time1.strftime("%I:%M %p")
-    camera1 = "CAM1"
-    time_1 = time1.get()
-    video_name1 = f'{camera1}-{time_1}'
-    num1.config(text=0)
-    strt1.config(text=0)
-    drn1.config(text=0)
-    print("Camera1 Recording")
-    writer1 = cv2.VideoWriter(f"./{current_date}/{video_name1}.mp4", fourcc1, 23.0,
-                              (640, 480))
-
-
-def stop_recording1():
-    global recording, writer1, start_time1, elapsed_time_str1, code_array1
-    recording = False
-    print("Camera1 Stopped")
-    if writer1 is not None:
-        writer1.release()
-
-    elapsed_time1 = datetime.now() - start_time1
-    elapsed_time_str1 = str(elapsed_time1).split(".")[0]
-    dur1 = elapsed_time_str1
-    code_array1 = len(qr_codes_array1)
-    print("no in 1 camera", code_array1)
-
-    if len(first_detection_times1) == 0:
-        print("no DATA DETECTED")
-
-    else:
-        strt1.config(text=started_time1)
-        drn1.config(text=dur1)
-        num1.config(text=code_array1)
-        # dispatch1(video_name1, elapsed_time_str1, len(qr_codes_array1), present_date,  present_time, username)
-        rec1_data = sqlite3.connect('./DATABASES/recording.db')
-        df = pd.read_sql_query(
-            f"SELECT * from record1data WHERE VIDEO_NAME = '{video_name1}'", rec1_data)
-        df.to_excel(f"./{current_date}/{video_name1}.xlsx", index=False)
-        rec1_data.close()
-
-
-def process_frame():
-    global recording, start_time1, writer1, end_time1, present_date, present_time, elapsed_time_str1, data1
-    # CAM CCTV
-    ret1, frame1 = cap1.read()
-    cv2.putText(frame1, "CAM1", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 1)
-    if ret1:
-        if recording:
-            qr_codes1 = decode(frame1)
-            for qr_code1 in qr_codes1:
-                data1 = qr_code1.data.decode('utf-8')
-                if data1 not in first_detection_times1:
-                    first_detection_times1[data1] = cap1.get(cv2.CAP_PROP_POS_MSEC) / 1000
-                    qr_codes_array1.append(data1)
-
-                    frequency = 1000
-                    duration = 500
-                    winsound.Beep(frequency, duration)
-                    present_date = datetime.now().strftime('%Y-%m-%d')
-                    present_time = datetime.now().strftime('%I:%M %p')
-
-                    print(
-                        f"QR code {data1} detected for the first time at{elapsed_time_str1} on {present_date}-{present_time} in {video_name1}")
-                    # scan1(data1, elapsed_time_str1, present_date, present_time, video_name1,  username)
-
-                for qr_code1 in qr_codes1:
-                    (x, y, w, h) = qr_code1.rect
-                    cv2.rectangle(frame1, (x, y), (x + w, y + h), (0, 255, 0), 2)
-                    pts2 = qr_code1.rect
-                    cv2.putText(frame1, data1, (pts2[0], pts2[1]), cv2.FONT_HERSHEY_SIMPLEX,
-                                0.9, (255, 0, 255), 1)
-
-                if len(qr_codes_array1) == 0:
-                    print("No QR codes detected!!!!!")
-
-            if start_time1 is None:
-                start_time1 = datetime.now()
-
-            elapsed_time1 = datetime.now() - start_time1
-            elapsed_time_str1 = str(elapsed_time1).split(".")[0]
-            cv2.putText(frame1, "CAM1", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.5,
-                        (0, 0, 255), 1)
-            cv2.putText(frame1, f"START TIME:  {started_time1}", (10, 60),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.5,
-                        (0, 0, 255), 1)
-            cv2.putText(frame1, f"DURATION:    {elapsed_time_str1}", (10, 90),
-                        cv2.FONT_HERSHEY_SIMPLEX,
-                        0.5,
-                        (0, 0, 255), 1)
-            cv2.putText(frame1, f"NO OF DATA:  {len(qr_codes_array1)}", (10, 120),
-                        cv2.FONT_HERSHEY_SIMPLEX,
-                        0.5, (0, 0, 255), 1)
-            cv2.putText(frame1, f"LAST DATA:   {data1}", (10, 150),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.5,
-                        (0, 0, 255),
-                        1)
-            writer1.write(frame1)
-        cv2.imshow("Recording Camera 1", frame1)
-
-    if not ret1:
-        blank_frame1 = np.zeros((480, 640, 3), dtype=np.uint8)
-        cv2.putText(blank_frame1, "CAM1 DISCONNECTED", (10, 30), cv2.FONT_HERSHEY_SIMPLEX,
-                    0.5, (0, 0, 255),
-                    1)
-        cv2.imshow("Recording Camera CAM1", blank_frame1)
-
-    controller.after(1, process_frame)
-
-
 def close_window():
-    cap1.release()
+    # cap1.release()
     cv2.destroyAllWindows()
     controller.destroy()
 
 
-def camera():
-    global cap1, fourcc1
-    cap1 = cv2.VideoCapture(0, cv2.CAP_DSHOW)
-    cap1.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
-    cap1.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
-    fourcc1 = cv2.VideoWriter_fourcc('m', 'p', '4', 'v')
+cap1 = cv2.VideoCapture(0, cv2.CAP_DSHOW)
+cap1.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+cap1.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+fourcc1 = cv2.VideoWriter_fourcc('m', 'p', '4', 'v')
 
 
 def record():
     # Detect the number of camera connected to system #
+    camera_list = [f'Camera {i}' for i in range(10) if cv2.VideoCapture(i).read()[0]]
+    print(f'Detected cameras: {", ".join(camera_list)}')
+    Number_of_camera = len(camera_list)
+    print("Total number of cameras:", Number_of_camera)
+
     if Number_of_camera == 1:
         print("One camera is connected to system")
 
-        global controller, time1, strt1, drn1, num1
-
-        camera()
-
+        global controller
         controller = tk.Tk()
         controller.geometry("300x300")
         controller.title("VIDEO CONTROLLER")
@@ -219,9 +87,9 @@ def record():
         get_time1.place(x=60, y=90)
         time1 = tk.Entry(controller)
         time1.place(x=160, y=90)
-        start_button_1 = tk.Button(controller, text="START CAM1", command=start_recording1)
+        start_button_1 = tk.Button(controller, text="START CAM1")
         start_button_1.place(x=60, y=120)
-        stop_button_1 = tk.Button(controller, text="STOP CAM1", command=stop_recording1)
+        stop_button_1 = tk.Button(controller, text="STOP CAM1", )
         stop_button_1.place(x=160, y=120)
 
         ####################    CAM1
@@ -241,10 +109,8 @@ def record():
         close_button = tk.Button(controller, text="Close", command=close_window)
         close_button.place(x=130, y=250)
 
-        controller.after(1, process_frame)
+        controller.after(1)
         controller.mainloop()
-
-
 
     elif Number_of_camera == 2:
         print("Two camera is connected to system")
@@ -313,11 +179,10 @@ def display_summary():
 
     output_frame.update_idletasks()
     canvas.configure(scrollregion=canvas.bbox("all"))
-    canvas.bind_all("<MouseWheel>",  lambda event: canvas.yview_scroll(int(-1 * (event.delta / 120)), "units"))
+    canvas.bind_all("<MouseWheel>", lambda event: canvas.yview_scroll(int(-1 * (event.delta / 120)), "units"))
 
 
 def export_summary():
-
     conn = sqlite3.connect('DATABASES/recording.db')
     df = pd.read_sql_query("SELECT * from recordsummary", conn)
     df.to_excel(f"RECORDING SUMMARY.xlsx", index=False)
@@ -417,31 +282,39 @@ def login_account():
             general = tk.Label(options_frame, text="GENERAL", font=10, bg="#c3c3c3")
             general.place(x=50, y=20)
 
-            rec_btn = tk.Button(options_frame, text="RECORD", font=('Bold', 15), fg='white', bd=0, bg='#4392fa',width=15,borderwidth=5, command=record)
+            rec_btn = tk.Button(options_frame, text="RECORD", font=('Bold', 15), fg='white', bd=0, bg='#4392fa',
+                                width=15, borderwidth=5, command=record)
             rec_btn.place(x=10, y=50)
 
-            summary_btn = tk.Button(options_frame, text="DISPLAY \n SUMMARY", font=('Bold', 15), fg='white', bd=0,bg='#4392fa',width=15, borderwidth=5, command=display_summary)
+            summary_btn = tk.Button(options_frame, text="DISPLAY \n SUMMARY", font=('Bold', 15), fg='white', bd=0,
+                                    bg='#4392fa', width=15, borderwidth=5, command=display_summary)
             summary_btn.place(x=10, y=110)
 
-            exp_rec_summary_bt = tk.Button(options_frame, text="EXPORT REC\n SUMMARY", font=('Bold', 15),fg='white', bd=0,bg='#4392fa',width=15, borderwidth=5, command=export_summary)
+            exp_rec_summary_bt = tk.Button(options_frame, text="EXPORT REC\n SUMMARY", font=('Bold', 15), fg='white',
+                                           bd=0, bg='#4392fa', width=15, borderwidth=5, command=export_summary)
             exp_rec_summary_bt.place(x=10, y=195)
 
             options = tk.Label(options_frame, text="OPTIONS", font=15, bg="#c3c3c3")
             options.place(x=50, y=280)
 
-            input_btn = tk.Button(options_frame, text="INPUT \n VIDEO", font=('Bold', 15), fg='white', bd=0,bg='#4392fa', width=15,borderwidth=5)
+            input_btn = tk.Button(options_frame, text="INPUT \n VIDEO", font=('Bold', 15), fg='white', bd=0,
+                                  bg='#4392fa', width=15, borderwidth=5)
             input_btn.place(x=10, y=320)
 
-            data_btn = tk.Button(options_frame, text="EXPORT\nCAPTURED\nDATA", font=('Bold', 15), fg='white', bd=0,bg='#4392fa',width=15, borderwidth=5)
+            data_btn = tk.Button(options_frame, text="EXPORT\nCAPTURED\nDATA", font=('Bold', 15), fg='white', bd=0,
+                                 bg='#4392fa', width=15, borderwidth=5)
             data_btn.place(x=10, y=400)
 
-            exp_input_summary_bt = tk.Button(options_frame, text="EXPORT INPUT\n SUMMARY", font=('Bold', 15),fg='white', bd=0,bg='#4392fa',width=15, borderwidth=5)
+            exp_input_summary_bt = tk.Button(options_frame, text="EXPORT INPUT\n SUMMARY", font=('Bold', 15),
+                                             fg='white', bd=0, bg='#4392fa', width=15, borderwidth=5)
             exp_input_summary_bt.place(x=10, y=505)
 
-            download_btn = tk.Button(options_frame, text="DOWNLOAD \n CLIP", font=('Bold', 15), fg='white', bd=0,bg='#4392fa',width=15, borderwidth=5)
+            download_btn = tk.Button(options_frame, text="DOWNLOAD \n CLIP", font=('Bold', 15), fg='white', bd=0,
+                                     bg='#4392fa', width=15, borderwidth=5)
             download_btn.place(x=10, y=590)
 
-            cre_user = Button(options_frame, text='CREATE USER', font=('Bold', 15), fg='white', bd=0,bg='#4392fa',width=15, borderwidth=5, command=create_user)
+            cre_user = Button(options_frame, text='CREATE USER', font=('Bold', 15), fg='white', bd=0, bg='#4392fa',
+                              width=15, borderwidth=5, command=create_user)
             cre_user.place(x=10, y=680)
 
             delete_db = tk.Button(options_frame, text="Delete DB", bg='red', fg='white')
@@ -485,22 +358,27 @@ def login_account():
             general = tk.Label(options_frame, text="GENERAL", font=10, bg="#c3c3c3")
             general.place(x=50, y=150)
 
-            rec_btn = tk.Button(options_frame, text="RECORD", font=('Bold', 15), fg='white', bd=0, bg='#4392fa', width=15, borderwidth=5)
+            rec_btn = tk.Button(options_frame, text="RECORD", font=('Bold', 15), fg='white', bd=0, bg='#4392fa',
+                                width=15, borderwidth=5)
             rec_btn.place(x=10, y=200)
 
-            summary_btn = tk.Button(options_frame, text="DISPLAY \n SUMMARY", font=('Bold', 15), fg='white', bd=0, bg='#4392fa', width=15, borderwidth=5)
+            summary_btn = tk.Button(options_frame, text="DISPLAY \n SUMMARY", font=('Bold', 15), fg='white', bd=0,
+                                    bg='#4392fa', width=15, borderwidth=5)
             summary_btn.place(x=10, y=270)
 
-            exp_rec_summary_bt = tk.Button(options_frame, text="EXPORT REC\n SUMMARY", font=('Bold', 15), fg='white', bd=0, bg='#4392fa', width=15, borderwidth=5, command=export_summary)
+            exp_rec_summary_bt = tk.Button(options_frame, text="EXPORT REC\n SUMMARY", font=('Bold', 15), fg='white',
+                                           bd=0, bg='#4392fa', width=15, borderwidth=5, command=export_summary)
             exp_rec_summary_bt.place(x=10, y=370)
 
             label = Label(options_frame, image=img)
             label.place(x=58, y=800)
 
-            company_name_display = Label(options_frame, text=f'{comp_name}', font=('Kozuka Gothic Pro B', 10, 'italic'), bg="#c3c3c3")
+            company_name_display = Label(options_frame, text=f'{comp_name}', font=('Kozuka Gothic Pro B', 10, 'italic'),
+                                         bg="#c3c3c3")
             company_name_display.place(x=70, y=900)
 
-            company_location = Label(options_frame, text=f'{location_company}', font=('Kozuka Gothic Pro B', 10, 'italic'), bg="#c3c3c3")
+            company_location = Label(options_frame, text=f'{location_company}',
+                                     font=('Kozuka Gothic Pro B', 10, 'italic'), bg="#c3c3c3")
             company_location.place(x=70, y=920)
 
             # MAIN FRAME
@@ -609,22 +487,27 @@ def login_account():
             general = tk.Label(options_frame, text="GENERAL", font=10, bg="#c3c3c3")
             general.place(x=50, y=150)
 
-            rec_btn = tk.Button(options_frame, text="RECORD", font=('Bold', 15), fg='white', bd=0, bg='#4392fa', width=15, borderwidth=5)
+            rec_btn = tk.Button(options_frame, text="RECORD", font=('Bold', 15), fg='white', bd=0, bg='#4392fa',
+                                width=15, borderwidth=5)
             rec_btn.place(x=10, y=200)
 
-            summary_btn = tk.Button(options_frame, text="DISPLAY \n SUMMARY", font=('Bold', 15), fg='white', bd=0, bg='#4392fa', width=15, borderwidth=5)
+            summary_btn = tk.Button(options_frame, text="DISPLAY \n SUMMARY", font=('Bold', 15), fg='white', bd=0,
+                                    bg='#4392fa', width=15, borderwidth=5)
             summary_btn.place(x=10, y=270)
 
-            exp_rec_summary_bt = tk.Button(options_frame, text="EXPORT REC\n SUMMARY", font=('Bold', 15), fg='white', bd=0, bg='#4392fa', width=15, borderwidth=5, command=export_summary)
+            exp_rec_summary_bt = tk.Button(options_frame, text="EXPORT REC\n SUMMARY", font=('Bold', 15), fg='white',
+                                           bd=0, bg='#4392fa', width=15, borderwidth=5, command=export_summary)
             exp_rec_summary_bt.place(x=10, y=370)
 
             label = Label(options_frame, image=img)
             label.place(x=58, y=800)
 
-            company_name_display = Label(options_frame, text=f'{comp_name}', font=('Kozuka Gothic Pro B', 10, 'italic'), bg="#c3c3c3")
+            company_name_display = Label(options_frame, text=f'{comp_name}', font=('Kozuka Gothic Pro B', 10, 'italic'),
+                                         bg="#c3c3c3")
             company_name_display.place(x=70, y=900)
 
-            company_location = Label(options_frame, text=f'{location_company}', font=('Kozuka Gothic Pro B', 10, 'italic'), bg="#c3c3c3")
+            company_location = Label(options_frame, text=f'{location_company}',
+                                     font=('Kozuka Gothic Pro B', 10, 'italic'), bg="#c3c3c3")
             company_location.place(x=70, y=920)
 
             # MAIN FRAME
@@ -639,7 +522,7 @@ def login_account():
             print('Invalid credentials or you do not have access to the admin portal.')
             messagebox.showerror('Invalid Credentials', f'Username or password is wrong')
 
-# Classified based on the screen resolution #
+    # Classified based on the screen resolution #
 
     if check_user_name_not_null():
         if display_resolution[0] == 1920 and display_resolution[1] == 1080:
@@ -663,7 +546,8 @@ def login_account():
             connection = sqlite3.connect('EAN.db')
             cur = connection.cursor()
 
-            cur.execute("INSERT INTO users (user_name, designation, password) VALUES (?, ?, ?)", (user_name, desig, passwords))
+            cur.execute("INSERT INTO users (user_name, designation, password) VALUES (?, ?, ?)",
+                        (user_name, desig, passwords))
 
             connection.commit()
             cur.close()
@@ -704,7 +588,6 @@ def login_account():
 
 
 def login():
-
     global log
     connect = sqlite3.connect('EAN.db')
 
@@ -726,12 +609,12 @@ def login():
 
     log = Tk()
     log.geometry("900x430")
-    log.resizable(0,0)
+    log.resizable(0, 0)
     log.config(bg='#f0f0f0')
     log.title(f"{comp_name} LOGIN")
 
     font1 = ('Helvetica', 20, 'bold')
-    font2 = ('MS Serif', 15 )
+    font2 = ('MS Serif', 15)
     font3 = ('Kozuka Gothic Pro B', 10, 'italic')
 
     frame1 = Frame(log, bg='#f0f0f0', width=470, height=360)
@@ -753,21 +636,21 @@ def login():
     label = Label(log, image=img)
     label.place(x=65, y=65)
 
-    username_label = Label(frame1, text="USERNAME", fg='black', bg='#f0f0f0', font=('poppins', 10,'bold'))
+    username_label = Label(frame1, text="USERNAME", fg='black', bg='#f0f0f0', font=('poppins', 10, 'bold'))
     username_label.place(x=180, y=80)
 
     global username_entry2
     username_entry2 = Entry(frame1, font=font2, bg='#fff')
     username_entry2.place(x=180, y=110)
 
-    design_label = Label(frame1, text="DESIGNATION", fg='black', bg='#f0f0f0',font=('poppins', 10,'bold'))
+    design_label = Label(frame1, text="DESIGNATION", fg='black', bg='#f0f0f0', font=('poppins', 10, 'bold'))
     design_label.place(x=180, y=150)
 
     global user_designation
     user_designation = Entry(frame1, font=font2, bg='#fff')
     user_designation.place(x=180, y=180)
 
-    password_label = Label(frame1, text="PASSWORD", fg='black', bg='#f0f0f0', font=('poppins', 10,'bold'))
+    password_label = Label(frame1, text="PASSWORD", fg='black', bg='#f0f0f0', font=('poppins', 10, 'bold'))
     password_label.place(x=180, y=220)
 
     global password_entry2
@@ -780,7 +663,7 @@ def login():
     company_name_display = Label(log, text=f'{comp_name}', font=font3)
     company_name_display.place(x=770, y=370)
 
-    company_location =  Label(log, text=f'{location_company}', font=font3)
+    company_location = Label(log, text=f'{location_company}', font=font3)
     company_location.place(x=770, y=390)
 
     log.mainloop()
@@ -793,16 +676,17 @@ if check_company_name_not_null():
 
 # If no one is worked on this application then else condition works. ↓ #
 
-
 else:
     print(f"Entry with company does not exist.")
     w = Tk()
     w.geometry("600x400")
     w.title("Company details")
 
+
     def filedialogs():
         global get_image
-        get_image = filedialog.askopenfilenames(title="SELECT IMAGE", filetypes=(("png", "*.png"), ("jpg", "*.jpg"), ("All files", "*.*")))
+        get_image = filedialog.askopenfilenames(title="SELECT IMAGE",
+                                                filetypes=(("png", "*.png"), ("jpg", "*.jpg"), ("All files", "*.*")))
 
 
     def conver_image_into_binary(filename):
